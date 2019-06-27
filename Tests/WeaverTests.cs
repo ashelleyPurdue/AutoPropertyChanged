@@ -24,7 +24,7 @@ namespace Tests
             point.Y = 1;
             point.Z = 2;
 
-            ((INotifyPropertyChanged)point).AssertChangesProperty("X", () => point.x = 1);
+            ((INotifyPropertyChanged)point).AssertChangesProperty("X", () => point.X = 1);
         }
     }
 
