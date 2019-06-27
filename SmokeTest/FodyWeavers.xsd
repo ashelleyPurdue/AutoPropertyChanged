@@ -4,7 +4,7 @@
   <xs:element name="Weavers">
     <xs:complexType>
       <xs:all>
-        <xs:element name="BasicFodyAddin" minOccurs="0" maxOccurs="1">
+        <xs:element name="AutoPropertyChanged" minOccurs="0" maxOccurs="1">
           <xs:complexType>
             <xs:attribute name="Namespace" type="xs:string">
               <xs:annotation>
