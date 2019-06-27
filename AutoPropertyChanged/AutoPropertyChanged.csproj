@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageOutputPath>$(SolutionDir)/nugets</PackageOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Fody" Version="5.1.1" PrivateAssets="None" />
+    <PackageReference Include="FodyPackaging" Version="5.1.1" PrivateAssets="All" />
+  </ItemGroup>
+</Project>
