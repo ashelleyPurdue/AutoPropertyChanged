@@ -16,15 +16,6 @@ namespace Tests
         }
 
         [Fact]
-        public void ValidateHelloWorldIsInjected()
-        {
-            var type = testResult.Assembly.GetType("TheNamespace.Hello");
-            var instance = (dynamic)Activator.CreateInstance(type);
-
-            Assert.Equal("Hello World", instance.World());
-        }
-
-        [Fact]
         public void Changing_Property_Fires_Event()
         {
             var type = testResult.Assembly.GetType("AssemblyToProcess.Point");
