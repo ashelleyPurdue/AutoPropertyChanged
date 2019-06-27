@@ -10,8 +10,8 @@
     <PackageReference Include="Xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
-    <ProjectReference Include="..\BasicFodyAddin.Fody\BasicFodyAddin.Fody.csproj" />
-    <ProjectReference Include="..\BasicFodyAddin\BasicFodyAddin.csproj" />
+    <ProjectReference Include="..\AutoPropertyChanged.Fody\AutoPropertyChanged.Fody.csproj" />
+    <ProjectReference Include="..\AutoPropertyChanged\AutoPropertyChanged.csproj" />
     <ProjectReference Include="..\AssemblyToProcess\AssemblyToProcess.csproj" />
   </ItemGroup>
 </Project>

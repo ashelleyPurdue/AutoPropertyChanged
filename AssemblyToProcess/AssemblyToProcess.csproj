@@ -5,6 +5,6 @@
     <DisableFody>true</DisableFody>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BasicFodyAddin\BasicFodyAddin.csproj" />
+    <ProjectReference Include="..\AutoPropertyChanged\AutoPropertyChanged.csproj" />
   </ItemGroup>
 </Project>
