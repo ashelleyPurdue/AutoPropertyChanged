@@ -19,8 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmokeTest", "SmokeTest\SmokeTest.csproj", "{3B4ED4A9-C8F0-4B75-A5C7-B22213B7A3DC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,10 +41,6 @@ Global
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3B4ED4A9-C8F0-4B75-A5C7-B22213B7A3DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3B4ED4A9-C8F0-4B75-A5C7-B22213B7A3DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3B4ED4A9-C8F0-4B75-A5C7-B22213B7A3DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3B4ED4A9-C8F0-4B75-A5C7-B22213B7A3DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
