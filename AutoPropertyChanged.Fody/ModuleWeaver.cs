@@ -12,17 +12,29 @@ public class ModuleWeaver : BaseModuleWeaver
 
     public override void Execute()
     {
-        IEnumerable<TypeDefinition> inpClasses = ModuleDefinition
+        IEnumerable<TypeDefinition> inpcClasses = ModuleDefinition
             .GetAllTypes()
             .Where(t => ImplementsINPC(t));
 
-        foreach (var inpClass in inpClasses)
-            throw new Exception($"{inpClass.Name} implements INotifyPropertyChanged");
+        foreach (var inpcClass in inpcClasses)
+        {
+            var taggedProperties = inpcClass
+                .Properties
+                .Where(p => ShouldBeWeaved(p));
+
+            foreach (var property in taggedProperties)
+                throw new Exception($"{property} should be weaved.");
+        }
     }
 
     private bool ImplementsINPC(TypeDefinition t) => t
         .Interfaces
         .Where(i => i.InterfaceType.Name == "INotifyPropertyChanged")
+        .Any();
+
+    private bool ShouldBeWeaved(PropertyDefinition p) => p
+        .CustomAttributes
+        .Where(c => c.AttributeType.Name == "NotifyChangedAttribute")
         .Any();
 
     public override IEnumerable<string> GetAssembliesForScanning()
