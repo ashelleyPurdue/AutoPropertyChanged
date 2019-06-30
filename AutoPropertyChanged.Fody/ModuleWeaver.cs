@@ -46,7 +46,31 @@ public class ModuleWeaver : BaseModuleWeaver
 
     private void WeaveProperty(PropertyDefinition p)
     {
+        var proc = p
+            .SetMethod
+            .Body
+            .GetILProcessor();
 
+        // Remove the ending "ret", so we can add stuff to the end.
+        Instruction ret = proc
+            .Body
+            .Instructions
+            .Last();
+        proc.Remove(ret);
+
+        // Add a call to InvokePropertyChanged
+        MethodReference invokePropertyChanged = p
+            .DeclaringType
+            .Methods
+            .Where(m => m.Name == "InvokePropertyChanged")
+            .Single();
+
+        proc.Emit(OpCodes.Ldarg_0);
+        proc.Emit(OpCodes.Ldstr, p.Name);
+        proc.Emit(OpCodes.Call, invokePropertyChanged);
+
+        // Add the final "ret" back on.
+        proc.Append(ret);
     }
 
     private MethodDefinition CreateInvokePropertyChanged(TypeDefinition type)
