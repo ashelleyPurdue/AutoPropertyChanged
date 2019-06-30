@@ -18,26 +18,16 @@ namespace Tests
         }
 
         [Fact]
-        public void InvokePropertyChanged_Gets_Added()
+        public void Changing_Property_Doesnt_Crash_If_No_Subscribers()
         {
-            var point = Activator.CreateInstance(pointType);
-            ((INotifyPropertyChanged)point).AssertChangesProperty("X", () =>
-            {
-                InvokePrivateMethod(point, "InvokePropertyChanged", "X");
-            });
-        }
-
-        [Fact]
-        public void InvokePropertyChanged_Doesnt_Crash_If_No_Subscribers()
-        {
-            var point = Activator.CreateInstance(pointType);
-            InvokePrivateMethod(point, "InvokePropertyChanged", "X");
+            dynamic point = Activator.CreateInstance(pointType);
+            point.X = 2;
         }
         
         [Fact]
         public void Changing_Property_Fires_Event()
         {
-            var point = (dynamic)Activator.CreateInstance(pointType);
+            dynamic point = Activator.CreateInstance(pointType);
             point.X = 0;
             point.Y = 1;
             point.Z = 2;
