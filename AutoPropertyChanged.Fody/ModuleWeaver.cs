@@ -24,11 +24,6 @@ public class ModuleWeaver : BaseModuleWeaver
                 .Properties
                 .Where(p => ShouldBeWeaved(p));
 
-            if (!taggedProperties.Any())
-                continue;
-
-            inpcClass.Methods.Add(CreateInvokePropertyChanged(inpcClass));
-
             foreach (var property in taggedProperties)
                 WeaveProperty(property);
         }
@@ -46,7 +41,19 @@ public class ModuleWeaver : BaseModuleWeaver
 
     private void WeaveProperty(PropertyDefinition p)
     {
-        var proc = p
+        ConstructorInfo argsConstructor = typeof(PropertyChangedEventArgs)
+            .GetConstructor(new[] { typeof(string) });
+
+        FieldReference propertyChanged = p
+            .DeclaringType
+            .Fields
+            .Where(f => f.Name == "PropertyChanged")
+            .Single();
+
+        MethodInfo invoke = typeof(PropertyChangedEventHandler)
+            .GetMethod("Invoke");
+
+        ILProcessor proc = p
             .SetMethod
             .Body
             .GetILProcessor();
@@ -58,63 +65,25 @@ public class ModuleWeaver : BaseModuleWeaver
             .Last();
         proc.Remove(ret);
 
-        // Add a call to InvokePropertyChanged
-        MethodReference invokePropertyChanged = p
-            .DeclaringType
-            .Methods
-            .Where(m => m.Name == "InvokePropertyChanged")
-            .Single();
+        // Bail out if there are no subscribers.
+        proc.Emit(OpCodes.Ldarg_0);
+        proc.Emit(OpCodes.Ldfld, propertyChanged);
+
+        proc.Emit(OpCodes.Ldnull);
+        proc.Emit(OpCodes.Beq, ret);
+
+        // Invoke PropertyChanged
+        proc.Emit(OpCodes.Ldarg_0);
+        proc.Emit(OpCodes.Ldfld, propertyChanged);
 
         proc.Emit(OpCodes.Ldarg_0);
         proc.Emit(OpCodes.Ldstr, p.Name);
-        proc.Emit(OpCodes.Call, invokePropertyChanged);
+        proc.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
+        proc.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
 
         // Add the final "ret" back on.
         proc.Append(ret);
     }
-
-    private MethodDefinition CreateInvokePropertyChanged(TypeDefinition type)
-    {
-        ConstructorInfo argsConstructor = typeof(PropertyChangedEventArgs)
-            .GetConstructor(new[] { typeof(string) });
-
-        FieldReference propertyChanged = type
-            .Fields
-            .Where(f => f.Name == "PropertyChanged")
-            .Single();
-
-        MethodInfo invoke = typeof(PropertyChangedEventHandler)
-            .GetMethod("Invoke");
-
-        var method = new MethodDefinition("InvokePropertyChanged", Mono.Cecil.MethodAttributes.Private, TypeRef(typeof(void)));
-        method.Parameters.Add(new ParameterDefinition("propertyName", Mono.Cecil.ParameterAttributes.None, TypeRef<string>()));
-        var processor = method.Body.GetILProcessor();
-
-        // Equivalent to:
-        //      PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        // Bail out if it has no subscribers.
-        Instruction ret = processor.Create(OpCodes.Ret);
-
-        processor.Emit(OpCodes.Ldarg_0);
-        processor.Emit(OpCodes.Ldfld, propertyChanged);
-        processor.Emit(OpCodes.Ldnull);
-        processor.Emit(OpCodes.Beq, ret);
-
-        // Call the Invoke method.
-        processor.Emit(OpCodes.Ldarg_0);
-        processor.Emit(OpCodes.Ldfld, propertyChanged);
-        processor.Emit(OpCodes.Ldarg_0);
-        processor.Emit(OpCodes.Ldarg_1);
-        processor.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
-        processor.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
-
-        processor.Append(ret);
-
-        return method;
-    }
-
-    private TypeReference TypeRef(Type t) => ModuleDefinition.ImportReference(t);
-    private TypeReference TypeRef<T>() => ModuleDefinition.ImportReference(typeof(T));
 
     public override IEnumerable<string> GetAssembliesForScanning()
     {
