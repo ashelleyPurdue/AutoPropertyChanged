@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoPropertyChanged", "Auto
 		{C3578A7B-09A6-4444-9383-0DEAFA4958BD} = {C3578A7B-09A6-4444-9383-0DEAFA4958BD}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NugetTest", "NugetTest\NugetTest.csproj", "{23DEDA78-4A05-493D-AB9D-2C9DEDBC4494}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,10 @@ Global
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9BCD4937-CB40-4AE1-B884-16F37D64B3C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23DEDA78-4A05-493D-AB9D-2C9DEDBC4494}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23DEDA78-4A05-493D-AB9D-2C9DEDBC4494}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23DEDA78-4A05-493D-AB9D-2C9DEDBC4494}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23DEDA78-4A05-493D-AB9D-2C9DEDBC4494}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
