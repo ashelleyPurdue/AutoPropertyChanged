@@ -53,17 +53,39 @@ public class ModuleWeaver : BaseModuleWeaver
 
         // Every property marked with [NotifyChanged] should
         // fire a PropertyChanged event for itself.
-        var taggedProperties = t
+        var notifyChangedProps = t
             .Properties
             .Where(p => HasAttribute(p, "NotifyChangedAttribute"));
 
-        foreach (var property in taggedProperties)
+        foreach (var property in notifyChangedProps)
             dependencyMap
                 .GetOrAdd(property)
                 .Add(property.Name);
 
-        // TODO: Process properties marked with [DependsOn]
+        // Process properties marked with [DependsOn]
+        var propertiesByName = t
+            .Properties
+            .ToDictionary(p => p.Name);
 
+        var dependsOnProps = t
+            .Properties
+            .Where(p => HasAttribute(p, "DependsOnAttribute"));
+
+        foreach (var property in dependsOnProps)
+        {
+            // Get all the properties that this guy depends on
+            IEnumerable<PropertyDefinition> dependees = property
+                .CustomAttributes
+                .Where(a => a.AttributeType.Name == "DependsOnAttribute")
+                .SelectMany(a => (string[])(a.ConstructorArguments[0].Value))
+                .Select(name => propertiesByName[name]);
+
+            // Add this guy as a dependent to each of them.
+            foreach (var dependee in dependees)
+                dependencyMap
+                    .GetOrAdd(dependee)
+                    .Add(property.Name);
+        }
 
         // Convert the values from HashSet to IEnumerable, because
         // apparently C# doesn't do that automatically.
