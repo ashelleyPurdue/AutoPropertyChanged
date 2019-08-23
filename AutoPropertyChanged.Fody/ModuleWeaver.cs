@@ -25,7 +25,7 @@ public class ModuleWeaver : BaseModuleWeaver
                 .Where(p => ShouldBeWeaved(p));
 
             foreach (var property in taggedProperties)
-                WeaveProperty(property);
+                AddPropertyChangedInvokations(property, new[] { property.Name });
         }
     }
 
@@ -39,7 +39,13 @@ public class ModuleWeaver : BaseModuleWeaver
         .Where(c => c.AttributeType.Name == "NotifyChangedAttribute")
         .Any();
 
-    private void WeaveProperty(PropertyDefinition p)
+    /// <summary>
+    /// Weaves property p's setter so that it invokes PropertyChanged
+    /// with each of the given items
+    /// </summary>
+    /// <param name="p"></param>
+    /// <param name="propertiesToInvokeChangesFor"></param>
+    private void AddPropertyChangedInvokations(PropertyDefinition p, IEnumerable<string> propertiesToInvokeChangesFor)
     {
         ConstructorInfo argsConstructor = typeof(PropertyChangedEventArgs)
             .GetConstructor(new[] { typeof(string) });
@@ -72,14 +78,17 @@ public class ModuleWeaver : BaseModuleWeaver
         proc.Emit(OpCodes.Ldnull);
         proc.Emit(OpCodes.Beq, ret);
 
-        // Invoke PropertyChanged
-        proc.Emit(OpCodes.Ldarg_0);
-        proc.Emit(OpCodes.Ldfld, propertyChanged);
+        // Invoke PropertyChanged for each of the properties
+        foreach (string propertyName in propertiesToInvokeChangesFor)
+        {
+            proc.Emit(OpCodes.Ldarg_0);
+            proc.Emit(OpCodes.Ldfld, propertyChanged);
 
-        proc.Emit(OpCodes.Ldarg_0);
-        proc.Emit(OpCodes.Ldstr, p.Name);
-        proc.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
-        proc.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
+            proc.Emit(OpCodes.Ldarg_0);
+            proc.Emit(OpCodes.Ldstr, propertyName);
+            proc.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
+            proc.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
+        }
 
         // Add the final "ret" back on.
         proc.Append(ret);
