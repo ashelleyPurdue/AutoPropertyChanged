@@ -40,6 +40,41 @@ public class ModuleWeaver : BaseModuleWeaver
         .Any();
 
     /// <summary>
+    /// Scans through type t and produces a dictionary
+    /// detailing which properties depend on each key.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <returns>
+    /// Each key is a property marked with [NotifyChanged].
+    /// Each value is a list of properties that should be
+    /// updated when the key changes.
+    /// </returns>
+    private Dictionary<PropertyDefinition, IEnumerable<string>> FindPropertyDependencies(TypeDefinition t)
+    {
+        var dependencyMap = new Dictionary<PropertyDefinition, HashSet<string>>();
+
+        // Every property marked with [NotifyChanged] should
+        // fire a PropertyChanged event for itself.
+        var taggedProperties = t
+            .Properties
+            .Where(p => ShouldBeWeaved(p));
+
+        foreach (var property in taggedProperties)
+            dependencyMap
+                .GetOrAdd(property)
+                .Add(property.Name);
+
+        // TODO: Process properties marked with [DependsOn]
+
+        // Convert the values from HashSet to IEnumerable, because
+        // apparently C# doesn't do that automatically.
+        return dependencyMap
+            .Keys
+            .Select(k => (k, dependencyMap[k]))
+            .ToDictionary(pair => pair.k, pair => (IEnumerable<string>)pair.Item2);
+    }
+
+    /// <summary>
     /// Weaves property p's setter so that it invokes PropertyChanged
     /// with each of the given items
     /// </summary>
