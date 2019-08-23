@@ -16,27 +16,25 @@ public class ModuleWeaver : BaseModuleWeaver
     {
         IEnumerable<TypeDefinition> inpcClasses = ModuleDefinition
             .GetAllTypes()
-            .Where(t => ImplementsINPC(t));
+            .Where(t => Implements(t, "INotifyPropertyChanged"));
 
         foreach (var inpcClass in inpcClasses)
         {
-            var taggedProperties = inpcClass
-                .Properties
-                .Where(p => ShouldBeWeaved(p));
+            var dependencies = FindPropertyDependencies(inpcClass);
 
-            foreach (var property in taggedProperties)
-                AddPropertyChangedInvokations(property, new[] { property.Name });
+            foreach (var property in dependencies.Keys)
+                AddPropertyChangedInvokations(property, dependencies[property]);
         }
     }
 
-    private bool ImplementsINPC(TypeDefinition t) => t
+    private bool Implements(TypeDefinition t, string interfaceName) => t
         .Interfaces
-        .Where(i => i.InterfaceType.Name == "INotifyPropertyChanged")
+        .Where(i => i.InterfaceType.Name == interfaceName)
         .Any();
 
-    private bool ShouldBeWeaved(PropertyDefinition p) => p
+    private bool HasAttribute(PropertyDefinition p, string attrName) => p
         .CustomAttributes
-        .Where(c => c.AttributeType.Name == "NotifyChangedAttribute")
+        .Where(c => c.AttributeType.Name == attrName)
         .Any();
 
     /// <summary>
@@ -57,7 +55,7 @@ public class ModuleWeaver : BaseModuleWeaver
         // fire a PropertyChanged event for itself.
         var taggedProperties = t
             .Properties
-            .Where(p => ShouldBeWeaved(p));
+            .Where(p => HasAttribute(p, "NotifyChangedAttribute"));
 
         foreach (var property in taggedProperties)
             dependencyMap
@@ -65,6 +63,7 @@ public class ModuleWeaver : BaseModuleWeaver
                 .Add(property.Name);
 
         // TODO: Process properties marked with [DependsOn]
+
 
         // Convert the values from HashSet to IEnumerable, because
         // apparently C# doesn't do that automatically.
