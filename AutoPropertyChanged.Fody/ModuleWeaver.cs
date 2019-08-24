@@ -81,16 +81,32 @@ public class ModuleWeaver : BaseModuleWeaver
                 .Where(a => a.AttributeType.Name == "DependsOnAttribute")
                 .Single();
 
-            var dependencyName = (string)(dependsOnAttr
+            var attrArgs = dependsOnAttr
                 .ConstructorArguments
-                .First()
-                .Value);
+                .ToList();
+
+            // The first argument is a single string(not a params array).
+            var firstDependencyName = (string)(attrArgs[0].Value);
 
             dependencyMap
-                .GetOrAdd(propertiesByName[dependencyName])
+                .GetOrAdd(propertiesByName[firstDependencyName])
                 .Add(property.Name);
 
-            // TODO: Do it for all of them
+            // The second argument, if it exists, is a params array
+            // with the rest of them.
+            // Why not JUST use a params array as the only argument?
+            // Beats me, I just know it doesn't work if you do.
+            if (attrArgs.Count == 1)
+                continue;
+
+            var remainingArgs = (CustomAttributeArgument[])attrArgs[1].Value;
+            IEnumerable<string> remainingDependencies = remainingArgs
+                .Select(arg => (string)arg.Value);
+
+            foreach (string dependencyName in remainingDependencies)
+                dependencyMap
+                    .GetOrAdd(propertiesByName[dependencyName])
+                    .Add(property.Name);
         }
 
         // Convert the values from HashSet to IEnumerable, because
