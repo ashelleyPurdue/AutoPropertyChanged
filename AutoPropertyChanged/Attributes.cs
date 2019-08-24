@@ -6,11 +6,12 @@ namespace AutoPropertyChanged
 
     public class DependsOnAttribute : Attribute
     {
-        public string[] Properties { get; set; }
-
-        public DependsOnAttribute(params string[] properties)
+        public DependsOnAttribute(string dependency)
         {
-            Properties = properties;
+        }
+
+        public DependsOnAttribute(string dependency, params string[] dependencies)
+        {
         }
     }
 }

@@ -43,7 +43,9 @@ namespace Tests
             point.Y = 1;
             point.Z = 2;
 
-            ((INotifyPropertyChanged)point).AssertChangesProperty("Magnitude", () => point.X = 1);
+            ((INotifyPropertyChanged)point).AssertChangesProperty("Magnitude", () => point.X = 100);
+            ((INotifyPropertyChanged)point).AssertChangesProperty("Magnitude", () => point.Y = 100);
+            ((INotifyPropertyChanged)point).AssertChangesProperty("Magnitude", () => point.Z = 100);
         }
 
         private void InvokePrivateMethod(object obj, string name, params object[] args) => obj

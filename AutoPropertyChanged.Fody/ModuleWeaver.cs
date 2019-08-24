@@ -74,17 +74,23 @@ public class ModuleWeaver : BaseModuleWeaver
         foreach (var property in dependsOnProps)
         {
             // Get all the properties that this guy depends on
-            IEnumerable<PropertyDefinition> dependees = property
+            // TODO: Right now it's only just one.  Extend it to
+            // accept multiple params.
+            var dependsOnAttr = property
                 .CustomAttributes
                 .Where(a => a.AttributeType.Name == "DependsOnAttribute")
-                .SelectMany(a => (string[])(a.ConstructorArguments[0].Value))
-                .Select(name => propertiesByName[name]);
+                .Single();
 
-            // Add this guy as a dependent to each of them.
-            foreach (var dependee in dependees)
-                dependencyMap
-                    .GetOrAdd(dependee)
-                    .Add(property.Name);
+            var dependencyName = (string)(dependsOnAttr
+                .ConstructorArguments
+                .First()
+                .Value);
+
+            dependencyMap
+                .GetOrAdd(propertiesByName[dependencyName])
+                .Add(property.Name);
+
+            // TODO: Do it for all of them
         }
 
         // Convert the values from HashSet to IEnumerable, because

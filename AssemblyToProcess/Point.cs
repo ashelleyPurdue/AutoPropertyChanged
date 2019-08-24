@@ -13,7 +13,7 @@ namespace AssemblyToProcess
         [NotifyChanged] public int Y { get; set; }
         [NotifyChanged] public int Z { get; set; }
 
-        [DependsOn("X", "Y", "Z")]
+        [DependsOn("X")]//, "Y", "Z")]
         public double Magnitude => Math.Sqrt((X * X) + (Y * Y) + (Z * Z));
 
         public event PropertyChangedEventHandler PropertyChanged;
