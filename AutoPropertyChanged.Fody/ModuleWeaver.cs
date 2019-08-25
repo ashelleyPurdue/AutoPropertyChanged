@@ -81,29 +81,11 @@ public class ModuleWeaver : BaseModuleWeaver
                 .Where(a => a.AttributeType.Name == "DependsOnAttribute")
                 .Single();
 
-            var attrArgs = dependsOnAttr
-                .ConstructorArguments
-                .ToList();
-
-            // The first argument is a single string(not a params array).
-            var firstDependencyName = (string)(attrArgs[0].Value);
-
-            dependencyMap
-                .GetOrAdd(propertiesByName[firstDependencyName])
-                .Add(property.Name);
-
             // The second argument, if it exists, is a params array
             // with the rest of them.
             // Why not JUST use a params array as the only argument?
             // Beats me, I just know it doesn't work if you do.
-            if (attrArgs.Count == 1)
-                continue;
-
-            var remainingArgs = (CustomAttributeArgument[])attrArgs[1].Value;
-            IEnumerable<string> remainingDependencies = remainingArgs
-                .Select(arg => (string)arg.Value);
-
-            foreach (string dependencyName in remainingDependencies)
+            foreach (string dependencyName in GetDependsOnArguments(dependsOnAttr))
                 dependencyMap
                     .GetOrAdd(propertiesByName[dependencyName])
                     .Add(property.Name);
@@ -115,6 +97,38 @@ public class ModuleWeaver : BaseModuleWeaver
             .Keys
             .Select(k => (k, dependencyMap[k]))
             .ToDictionary(pair => pair.k, pair => (IEnumerable<string>)pair.Item2);
+    }
+
+    /// <summary>
+    /// Enumerates the arguments of the given DependsOnAttribute.
+    /// </summary>
+    /// <param name="dependsOnAttr">
+    ///     A CustomAttribute corresponding to a DependsOnAttribute.
+    ///     I wish I could express that in the type system.
+    /// </param>
+    /// <returns></returns>
+    private IEnumerable<string> GetDependsOnArguments(CustomAttribute dependsOnAttr)
+    {
+        var attrArgs = dependsOnAttr
+                .ConstructorArguments
+                .ToList();
+
+        // The first argument is a single string(not a params array).
+        yield return (string)(attrArgs[0].Value);
+
+        // The second argument, if it exists, is a params array
+        // with the rest of them.
+        // Why not JUST use a params array as the only argument?
+        // Beats me, I just know it doesn't work if you do.
+        if (attrArgs.Count == 1)
+            yield break;
+
+        var remainingArgs = (CustomAttributeArgument[])attrArgs[1].Value;
+        IEnumerable<string> remainingDependencies = remainingArgs
+            .Select(arg => (string)arg.Value);
+
+        foreach (string dependencyName in remainingDependencies)
+            yield return dependencyName;
     }
 
     /// <summary>
