@@ -74,18 +74,14 @@ public class ModuleWeaver : BaseModuleWeaver
         foreach (var property in dependsOnProps)
         {
             // Get all the properties that this guy depends on
-            // TODO: Right now it's only just one.  Extend it to
-            // accept multiple params.
             var dependsOnAttr = property
                 .CustomAttributes
                 .Where(a => a.AttributeType.Name == "DependsOnAttribute")
                 .Single();
 
-            // The second argument, if it exists, is a params array
-            // with the rest of them.
-            // Why not JUST use a params array as the only argument?
-            // Beats me, I just know it doesn't work if you do.
-            foreach (string dependencyName in GetDependsOnArguments(dependsOnAttr))
+            IEnumerable<string> dependencies = GetDependsOnArguments(dependsOnAttr);
+
+            foreach (string dependencyName in dependencies)
                 dependencyMap
                     .GetOrAdd(propertiesByName[dependencyName])
                     .Add(property.Name);
