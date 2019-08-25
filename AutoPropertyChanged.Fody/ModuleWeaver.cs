@@ -16,30 +16,124 @@ public class ModuleWeaver : BaseModuleWeaver
     {
         IEnumerable<TypeDefinition> inpcClasses = ModuleDefinition
             .GetAllTypes()
-            .Where(t => ImplementsINPC(t));
+            .Where(t => Implements(t, "INotifyPropertyChanged"));
 
         foreach (var inpcClass in inpcClasses)
         {
-            var taggedProperties = inpcClass
-                .Properties
-                .Where(p => ShouldBeWeaved(p));
+            var dependencies = FindPropertyDependencies(inpcClass);
 
-            foreach (var property in taggedProperties)
-                WeaveProperty(property);
+            foreach (var property in dependencies.Keys)
+                AddPropertyChangedInvokations(property, dependencies[property]);
         }
     }
 
-    private bool ImplementsINPC(TypeDefinition t) => t
+    private bool Implements(TypeDefinition t, string interfaceName) => t
         .Interfaces
-        .Where(i => i.InterfaceType.Name == "INotifyPropertyChanged")
+        .Where(i => i.InterfaceType.Name == interfaceName)
         .Any();
 
-    private bool ShouldBeWeaved(PropertyDefinition p) => p
+    private bool HasAttribute(PropertyDefinition p, string attrName) => p
         .CustomAttributes
-        .Where(c => c.AttributeType.Name == "NotifyChangedAttribute")
+        .Where(c => c.AttributeType.Name == attrName)
         .Any();
 
-    private void WeaveProperty(PropertyDefinition p)
+    /// <summary>
+    /// Scans through type t and produces a dictionary
+    /// detailing which properties depend on each key.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <returns>
+    /// Each key is a property marked with [NotifyChanged].
+    /// Each value is a list of properties that should be
+    /// updated when the key changes.
+    /// </returns>
+    private Dictionary<PropertyDefinition, IEnumerable<string>> FindPropertyDependencies(TypeDefinition t)
+    {
+        var dependencyMap = new Dictionary<PropertyDefinition, HashSet<string>>();
+
+        // Every property marked with [NotifyChanged] should
+        // fire a PropertyChanged event for itself.
+        var notifyChangedProps = t
+            .Properties
+            .Where(p => HasAttribute(p, "NotifyChangedAttribute"));
+
+        foreach (var property in notifyChangedProps)
+            dependencyMap
+                .GetOrAdd(property)
+                .Add(property.Name);
+
+        // Process properties marked with [DependsOn]
+        var propertiesByName = t
+            .Properties
+            .ToDictionary(p => p.Name);
+
+        var dependsOnProps = t
+            .Properties
+            .Where(p => HasAttribute(p, "DependsOnAttribute"));
+
+        foreach (var property in dependsOnProps)
+        {
+            // Get all the properties that this guy depends on
+            var dependsOnAttr = property
+                .CustomAttributes
+                .Where(a => a.AttributeType.Name == "DependsOnAttribute")
+                .Single();
+
+            IEnumerable<string> dependencies = GetDependsOnArguments(dependsOnAttr);
+
+            foreach (string dependencyName in dependencies)
+                dependencyMap
+                    .GetOrAdd(propertiesByName[dependencyName])
+                    .Add(property.Name);
+        }
+
+        // Convert the values from HashSet to IEnumerable, because
+        // apparently C# doesn't do that automatically.
+        return dependencyMap
+            .Keys
+            .Select(k => (k, dependencyMap[k]))
+            .ToDictionary(pair => pair.k, pair => (IEnumerable<string>)pair.Item2);
+    }
+
+    /// <summary>
+    /// Enumerates the arguments of the given DependsOnAttribute.
+    /// </summary>
+    /// <param name="dependsOnAttr">
+    ///     A CustomAttribute corresponding to a DependsOnAttribute.
+    ///     I wish I could express that in the type system.
+    /// </param>
+    /// <returns></returns>
+    private IEnumerable<string> GetDependsOnArguments(CustomAttribute dependsOnAttr)
+    {
+        var attrArgs = dependsOnAttr
+                .ConstructorArguments
+                .ToList();
+
+        // The first argument is a single string(not a params array).
+        yield return (string)(attrArgs[0].Value);
+
+        // The second argument, if it exists, is a params array
+        // with the rest of them.
+        // Why not JUST use a params array as the only argument?
+        // Beats me, I just know it doesn't work if you do.
+        if (attrArgs.Count == 1)
+            yield break;
+
+        var remainingArgs = (CustomAttributeArgument[])attrArgs[1].Value;
+        IEnumerable<string> remainingDependencies = remainingArgs
+            .Select(arg => (string)arg.Value);
+
+        foreach (string dependencyName in remainingDependencies)
+            yield return dependencyName;
+    }
+
+    /// <summary>
+    /// Weaves property p's setter so that it invokes PropertyChanged
+    /// with each of the given items
+    /// </summary>
+    /// <param name="p"></param>
+    /// <param name="propertiesToInvokeChangesFor"></param>
+    private void AddPropertyChangedInvokations(PropertyDefinition p, IEnumerable<string> propertiesToInvokeChangesFor)
     {
         ConstructorInfo argsConstructor = typeof(PropertyChangedEventArgs)
             .GetConstructor(new[] { typeof(string) });
@@ -72,14 +166,17 @@ public class ModuleWeaver : BaseModuleWeaver
         proc.Emit(OpCodes.Ldnull);
         proc.Emit(OpCodes.Beq, ret);
 
-        // Invoke PropertyChanged
-        proc.Emit(OpCodes.Ldarg_0);
-        proc.Emit(OpCodes.Ldfld, propertyChanged);
+        // Invoke PropertyChanged for each of the properties
+        foreach (string propertyName in propertiesToInvokeChangesFor)
+        {
+            proc.Emit(OpCodes.Ldarg_0);
+            proc.Emit(OpCodes.Ldfld, propertyChanged);
 
-        proc.Emit(OpCodes.Ldarg_0);
-        proc.Emit(OpCodes.Ldstr, p.Name);
-        proc.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
-        proc.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
+            proc.Emit(OpCodes.Ldarg_0);
+            proc.Emit(OpCodes.Ldstr, propertyName);
+            proc.Emit(OpCodes.Newobj, ModuleDefinition.ImportReference(argsConstructor));
+            proc.Emit(OpCodes.Callvirt, ModuleDefinition.ImportReference(invoke));
+        }
 
         // Add the final "ret" back on.
         proc.Append(ret);

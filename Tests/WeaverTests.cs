@@ -35,6 +35,21 @@ namespace Tests
             ((INotifyPropertyChanged)point).AssertChangesProperty("X", () => point.X = 1);
         }
 
+        [Fact]
+        public void Dependant_Properties_Get_Fired_When_Parent_Changes()
+        {
+            dynamic point = Activator.CreateInstance(pointType);
+            point.X = 0;
+            point.Y = 1;
+            point.Z = 2;
+
+            var castedPoint = (INotifyPropertyChanged)point;
+
+            castedPoint.AssertChangesProperty("Magnitude", () => point.X = 100);
+            castedPoint.AssertChangesProperty("Magnitude", () => point.Y = 100);
+            castedPoint.AssertChangesProperty("Magnitude", () => point.Z = 100);
+        }
+
         private void InvokePrivateMethod(object obj, string name, params object[] args) => obj
             .GetType()
             .GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)
